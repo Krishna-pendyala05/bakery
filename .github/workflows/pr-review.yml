@@ -1,0 +1,203 @@
+name: PR Review & Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Cancel any in-progress run for the same PR to avoid redundant work
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1: Automated Quality Checks (Lint, Type-Check, Build)
+  # ────────────────────────────────────────────────────────────────────────────
+  quality-checks:
+    name: "Quality Checks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prisma migrations (in-memory for CI)
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: "file:./prisma/ci-test.db"
+
+      - name: TypeScript type check
+        run: npm run type-check
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Next.js build check
+        run: npm run build
+        env:
+          DATABASE_URL: "file:./prisma/ci-test.db"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2: AI Architecture & Design Plan Review Agent
+  # Requires: OPENAI_API_KEY or ANTHROPIC_API_KEY in repository secrets.
+  # ────────────────────────────────────────────────────────────────────────────
+  ai-review:
+    name: "AI Architecture Review"
+    runs-on: ubuntu-latest
+    # Run after quality checks pass so we don't waste AI tokens on broken code
+    needs: quality-checks
+    permissions:
+      pull-requests: write   # Required to post the review comment back to the PR
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed to generate the diff
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          # Fetch the base branch so we can compare
+          git fetch origin ${{ github.base_ref }} --depth=1
+          # Generate full diff of all changed files (exclude lock files)
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- \
+            '*.ts' '*.tsx' '*.css' '*.json' '*.prisma' \
+            ':!package-lock.json' ':!*.tsbuildinfo' \
+            | head -c 30000) # Trim to 30k chars to stay within token limits
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Read architecture documents
+        id: docs
+        run: |
+          # Read the implementation plan and guidelines to give the agent context
+          IMPL_PLAN=$(cat .github/docs/implementation_plan.md 2>/dev/null || echo "Not found")
+          DEV_GUIDE=$(cat .github/docs/development_guidelines.md 2>/dev/null || echo "Not found")
+          echo "impl_plan<<EOF" >> $GITHUB_OUTPUT
+          echo "$IMPL_PLAN" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "dev_guide<<EOF" >> $GITHUB_OUTPUT
+          echo "$DEV_GUIDE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run AI Review Agent
+        id: ai_review
+        uses: actions/github-script@v7
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          script: |
+            const diff = `${{ steps.diff.outputs.diff }}`;
+            const implPlan = `${{ steps.docs.outputs.impl_plan }}`;
+            const devGuide = `${{ steps.docs.outputs.dev_guide }}`;
+
+            const systemPrompt = `You are a senior full-stack code reviewer for a Next.js bakery e-commerce website project.
+            Your job is to review Pull Requests to ensure:
+
+            1. ARCHITECTURE COMPLIANCE: Does the code follow the agreed file/folder structure?
+               - Next.js App Router with src/ directory
+               - Components in src/components/{ui,layout,catalog,checkout}/ComponentName/
+               - Each component folder has: ComponentName.tsx, ComponentName.module.css, index.ts
+               - API routes in src/app/api/
+               - Context in src/context/
+               - Hooks in src/hooks/
+               - Types in src/types/
+               - Utils in src/utils/
+               - DB lib in src/lib/prisma.ts
+
+            2. NAMING CONVENTIONS:
+               - Components & folders: PascalCase
+               - CSS modules: ComponentName.module.css
+               - Hooks: camelCase starting with 'use'
+               - Constants: UPPER_SNAKE_CASE
+               - Variables/functions: camelCase
+               - Types/Interfaces: PascalCase
+
+            3. CODE STANDARDS:
+               - No Tailwind CSS utility classes (use CSS Modules only)
+               - Server Components by default, 'use client' only for interactivity/hooks/browser APIs
+               - No API secrets exposed on client side
+               - JSDoc comments on all utility functions, hooks, and context exports
+               - CSS custom properties from global.css :root must be used (no hardcoded hex colors)
+               - No inline styles unless absolutely necessary
+
+            4. DESIGN PLAN ALIGNMENT:
+               - Does the code implement what was planned in the implementation plan?
+               - Are all planned features present and correct?
+
+            5. BREAKAGE RISK:
+               - Does anything look like it could break the existing app?
+               - Are there any TypeScript type mismatches?
+               - Are there missing imports or incorrect export patterns?
+
+            6. OVERALL QUALITY:
+               - Are there any security issues (e.g. exposed secrets, unvalidated user input)?
+               - Are CSS module class names following the project convention?
+
+            Format your response as a structured markdown review with:
+            - An overall verdict: ✅ APPROVED / ⚠️ NEEDS CHANGES / ❌ REJECTED
+            - A numbered list of findings per category
+            - Actionable suggestions for any issues found
+            Be constructive and specific. Reference exact file names and line numbers where possible.`;
+
+            const userPrompt = `## PR Code Diff
+            \`\`\`diff
+            ${diff}
+            \`\`\`
+
+            ## Implementation Plan
+            ${implPlan}
+
+            ## Development Guidelines
+            ${devGuide}
+
+            Please review this PR.`;
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt }
+                ],
+                max_tokens: 2000,
+                temperature: 0.2
+              })
+            });
+
+            const data = await response.json();
+            const review = data.choices?.[0]?.message?.content || 'AI review could not be generated.';
+            core.setOutput('review', review);
+
+      - name: Post AI review as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const review = `${{ steps.ai_review.outputs.review }}`;
+            const prNumber = context.payload.pull_request.number;
+            const body = `## 🤖 AI Architecture & Design Review\n\n${review}\n\n---\n*This review was generated automatically by the AI Review Agent checking compliance with the [Development Guidelines](.github/docs/development_guidelines.md) and [Implementation Plan](.github/docs/implementation_plan.md).*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
