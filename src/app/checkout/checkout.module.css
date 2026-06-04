@@ -1,0 +1,440 @@
+.checkoutContainer {
+  padding: 60px 20px 80px 20px;
+  flex: 1;
+}
+
+/* Steps Indicator */
+.stepsIndicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 48px;
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 10;
+}
+
+.stepNum {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-full);
+  background-color: var(--color-background-soft);
+  border: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.stepLabel {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--transition-smooth);
+}
+
+.stepActive .stepNum {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-light);
+  box-shadow: var(--shadow-accent-sm);
+}
+
+.stepActive .stepLabel {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.stepConnector {
+  flex: 1;
+  height: 2px;
+  background-color: var(--color-border);
+  margin-bottom: 24px;
+  max-width: 120px;
+}
+
+/* Layout Grid */
+.layout {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stepCard {
+  padding: 40px;
+  background-color: var(--color-card-bg);
+}
+
+@media (max-width: 576px) {
+  .stepCard {
+    padding: 24px;
+  }
+}
+
+.stepTitle {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.stepDescription {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
+}
+
+/* Steps Specifics */
+.cartList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.cartItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.itemMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemName {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.itemQty {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.itemPrice {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.nextRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.navRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 32px;
+  border-top: 1px dashed var(--color-border);
+  padding-top: 24px;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+/* OTP Code Verification styling */
+.otpSection {
+  margin-top: 24px;
+  padding: 20px;
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+.otpInputRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.otpBtn {
+  margin-bottom: 4px; /* Align with input box focus */
+}
+
+.verifiedAlert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(250, 188, 191, 0.15); /* Light accent tint */
+  border: 1px solid var(--color-accent);
+  border-radius: var(--border-radius-sm);
+  padding: 14px 18px;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.verifiedIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent-hover);
+}
+
+.errorAlert {
+  color: #d97d7f;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 16px;
+  text-align: center;
+}
+
+/* Step 3 Fulfillment Toggle */
+.controlGroup {
+  margin-bottom: 24px;
+}
+
+.controlLabel {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.modeToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-full);
+  background-color: var(--color-background-soft);
+  overflow: hidden;
+  padding: 4px;
+  width: fit-content;
+}
+
+.modeBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 10px 24px;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.modeBtn:hover {
+  color: var(--color-text);
+}
+
+.modeActive {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.pickerRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 576px) {
+  .pickerRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pickerCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.datePicker, .selectPicker {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.datePicker:focus, .selectPicker:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-border-focus);
+}
+
+.fieldError {
+  color: #d97d7f;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.textArea {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  resize: vertical;
+  transition: var(--transition-fast);
+}
+
+.textArea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-border-focus);
+}
+
+/* Step 4 Confirm Summaries */
+.summaryBlock {
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.blockTitle {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryBlock p {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.summaryBlock p:last-child {
+  margin-bottom: 0;
+}
+
+/* Side Total Summary Card */
+.sideSummary {
+  position: sticky;
+  top: 100px;
+}
+
+.summaryCard {
+  padding: 24px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+}
+
+.summaryTitle {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+.summaryDivider {
+  height: 1px;
+  border-bottom: 1px dashed var(--color-border);
+  margin: 16px 0;
+}
+
+.totalLine {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0;
+}
+
+/* Empty Cart View */
+.emptyCart {
+  text-align: center;
+  padding: 100px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 500px;
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
+}
+
+.emptyCart h2 {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.emptyCart p {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--color-text-muted);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}

@@ -1,0 +1,263 @@
+.detailContainer {
+  padding: 60px 20px 80px 20px;
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.successBadge {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--border-radius-full);
+  background-color: rgba(250, 188, 191, 0.15);
+  border: 2px solid var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.checkIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--color-accent-hover);
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.orderIdText {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.divider {
+  width: 60px;
+  height: 3px;
+  background-color: var(--color-accent);
+  margin-top: 16px;
+  border-radius: var(--border-radius-full);
+}
+
+/* Layout columns */
+.layout {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mainDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.infoCard {
+  padding: 30px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+}
+
+.cardTitle {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+/* OTP Highlights */
+.otpCard {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+  text-align: center;
+}
+
+.otpValueContainer {
+  background-color: #ffffff;
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--border-radius-md);
+  padding: 16px;
+  width: fit-content;
+  margin: 0 auto 20px auto;
+  min-width: 200px;
+}
+
+.otpValue {
+  font-family: var(--font-sans);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--color-text);
+}
+
+.otpDescription {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* Info Grid */
+.infoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoRow {
+  display: flex;
+  font-family: var(--font-sans);
+  font-size: 15px;
+}
+
+.infoLabel {
+  width: 120px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.infoVal {
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* Bill card right column */
+.billCard {
+  padding: 24px;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+}
+
+.billTitle {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.billItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.itemMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemName {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.itemQty {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.itemPrice {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.summaryDivider {
+  height: 1px;
+  border-bottom: 1px dashed var(--color-border);
+  margin: 16px 0;
+}
+
+.totalLine {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0;
+}
+
+/* Status block styling */
+.statusBlock {
+  margin-top: 24px;
+  padding: 14px 18px;
+  background-color: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statusLabel {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.statusVal {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--border-radius-full);
+}
+
+.statusPending {
+  background-color: #fcf8e3;
+  color: #8a6d3b;
+  border: 1px solid #faebcc;
+}
+
+.actions {
+  margin-top: 24px;
+}

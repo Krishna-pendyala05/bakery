@@ -1,66 +1,64 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import React from 'react';
+import { prisma } from '@/lib/prisma';
+import HomeClient from './HomeClient';
+import { CakeProduct } from '@/components/catalog/CakeCard';
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+// Opt in to dynamic rendering so it fetches from DB on each request
+export const dynamic = 'force-dynamic';
+
+/**
+ * Landing Page Server Component.
+ * Fetches all products from the database, groups them by flavour,
+ * filters the top 3 signature flavours (Chocolate Fudge, Red Velvet, Pineapple),
+ * and passes them to the interactive HomeClient component.
+ */
+export default async function Home() {
+  // Fetch all available products
+  const products = await prisma.product.findMany({
+    where: { isAvailable: true },
+    orderBy: { name: 'asc' },
+  });
+
+  // Group database products by flavour to form the CakeProduct objects
+  const flavourMap: { [key: string]: CakeProduct } = {};
+
+  products.forEach((product) => {
+    const flavourName = product.flavour;
+    let parsedTags: string[] = [];
+    try {
+      parsedTags = JSON.parse(product.tags);
+    } catch {
+      parsedTags = [];
+    }
+
+    if (!flavourMap[flavourName]) {
+      flavourMap[flavourName] = {
+        flavour: flavourName,
+        description: product.description,
+        imagePath: product.imagePath,
+        tags: parsedTags,
+        variants: [],
+      };
+    }
+
+    flavourMap[flavourName].variants.push({
+      id: product.id,
+      name: product.name,
+      size: product.size as 'HALF_KG' | 'ONE_KG',
+      price: product.price,
+    });
+  });
+
+  const allFlavours = Object.values(flavourMap);
+
+  // Take the 3 signature collections for the homepage: Chocolate Fudge, Red Velvet, Pineapple
+  const featuredFlavours = ['Chocolate Fudge', 'Red Velvet', 'Pineapple'];
+  const featuredCakes = allFlavours.filter((cake) =>
+    featuredFlavours.includes(cake.flavour)
   );
+
+  // Fallback in case of mismatch, take first 3 available
+  const finalFeatured = featuredCakes.length === 3 ? featuredCakes : allFlavours.slice(0, 3);
+
+  return <HomeClient featuredCakes={finalFeatured} />;
 }
