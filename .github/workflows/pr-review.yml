@@ -12,9 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ────────────────────────────────────────────────────────────────────────────
   # Job 1: Automated Quality Checks (Lint, Type-Check, Build)
-  # ────────────────────────────────────────────────────────────────────────────
   quality-checks:
     name: "Quality Checks"
     runs-on: ubuntu-latest
@@ -31,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Prisma migrations (in-memory for CI)
+      - name: Run Prisma migrations for CI
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: "file:./prisma/ci-test.db"
@@ -47,51 +45,31 @@ jobs:
         env:
           DATABASE_URL: "file:./prisma/ci-test.db"
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # Job 2: AI Architecture & Design Plan Review Agent
-  # Requires: OPENAI_API_KEY or ANTHROPIC_API_KEY in repository secrets.
-  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2: AI Architecture and Design Plan Review Agent
+  # Requires OPENAI_API_KEY to be set in repository secrets.
   ai-review:
     name: "AI Architecture Review"
     runs-on: ubuntu-latest
-    # Run after quality checks pass so we don't waste AI tokens on broken code
     needs: quality-checks
     permissions:
-      pull-requests: write   # Required to post the review comment back to the PR
+      pull-requests: write
       contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Full history needed to generate the diff
+          fetch-depth: 0
 
-      - name: Get PR diff
+      - name: Generate PR diff
         id: diff
         run: |
-          # Fetch the base branch so we can compare
           git fetch origin ${{ github.base_ref }} --depth=1
-          # Generate full diff of all changed files (exclude lock files)
-          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- \
+          git diff origin/${{ github.base_ref }}...HEAD -- \
             '*.ts' '*.tsx' '*.css' '*.json' '*.prisma' \
             ':!package-lock.json' ':!*.tsbuildinfo' \
-            | head -c 30000) # Trim to 30k chars to stay within token limits
-          echo "diff<<EOF" >> $GITHUB_OUTPUT
-          echo "$DIFF" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Read architecture documents
-        id: docs
-        run: |
-          # Read the implementation plan and guidelines to give the agent context
-          IMPL_PLAN=$(cat .github/docs/implementation_plan.md 2>/dev/null || echo "Not found")
-          DEV_GUIDE=$(cat .github/docs/development_guidelines.md 2>/dev/null || echo "Not found")
-          echo "impl_plan<<EOF" >> $GITHUB_OUTPUT
-          echo "$IMPL_PLAN" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "dev_guide<<EOF" >> $GITHUB_OUTPUT
-          echo "$DEV_GUIDE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+            | head -c 28000 > /tmp/pr_diff.txt
+          echo "Diff size: $(wc -c < /tmp/pr_diff.txt) bytes"
 
       - name: Run AI Review Agent
         id: ai_review
@@ -99,78 +77,66 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
+          # Pass all multi-line content via process.env, not via ${{ }} interpolation.
+          # This avoids syntax errors from backticks and special characters in diffs.
           script: |
-            const diff = `${{ steps.diff.outputs.diff }}`;
-            const implPlan = `${{ steps.docs.outputs.impl_plan }}`;
-            const devGuide = `${{ steps.docs.outputs.dev_guide }}`;
+            const fs = require('fs');
 
-            const systemPrompt = `You are a senior full-stack code reviewer for a Next.js bakery e-commerce website project.
-            Your job is to review Pull Requests to ensure:
+            const diff = fs.readFileSync('/tmp/pr_diff.txt', 'utf8');
+            const implPlan = fs.existsSync('.github/docs/implementation_plan.md')
+              ? fs.readFileSync('.github/docs/implementation_plan.md', 'utf8')
+              : 'Not found';
+            const devGuide = fs.existsSync('.github/docs/development_guidelines.md')
+              ? fs.readFileSync('.github/docs/development_guidelines.md', 'utf8')
+              : 'Not found';
 
-            1. ARCHITECTURE COMPLIANCE: Does the code follow the agreed file/folder structure?
-               - Next.js App Router with src/ directory
-               - Components in src/components/{ui,layout,catalog,checkout}/ComponentName/
-               - Each component folder has: ComponentName.tsx, ComponentName.module.css, index.ts
-               - API routes in src/app/api/
-               - Context in src/context/
-               - Hooks in src/hooks/
-               - Types in src/types/
-               - Utils in src/utils/
-               - DB lib in src/lib/prisma.ts
+            const systemPrompt = [
+              'You are a senior code reviewer for a Next.js Indian bakery e-commerce website.',
+              'Review this PR for compliance with the project architecture and design guidelines.',
+              '',
+              'Check each of the following:',
+              '1. ARCHITECTURE: Files are in the correct folders per the implementation plan.',
+              '   - Components: src/components/{ui,layout,catalog,checkout}/Name/Name.tsx + Name.module.css + index.ts',
+              '   - Context: src/context/, Hooks: src/hooks/, Utils: src/utils/, Types: src/types/',
+              '   - API routes: src/app/api/ (server-only)',
+              '2. NAMING: PascalCase for components/folders, camelCase for hooks/utils, UPPER_SNAKE_CASE for constants.',
+              '3. STYLING: No Tailwind CSS. CSS Modules only. No hardcoded hex colors (use CSS variables from globals.css).',
+              '4. CLIENT VS SERVER: use client directive only when the component uses hooks, events, or browser APIs.',
+              '5. SECURITY: No API secrets in client-side code. No NEXT_PUBLIC_ prefix on sensitive values.',
+              '6. BREAKAGE RISK: Missing imports, wrong export patterns, TypeScript type errors.',
+              '7. PLAN ALIGNMENT: Does this PR implement what the implementation plan says it should?',
+              '',
+              'Respond in this format:',
+              'Verdict: APPROVED / NEEDS CHANGES / REJECTED',
+              '',
+              'Then one short paragraph per check category above. Be specific and reference file names.',
+              'Keep the total response under 400 words.'
+            ].join('\n');
 
-            2. NAMING CONVENTIONS:
-               - Components & folders: PascalCase
-               - CSS modules: ComponentName.module.css
-               - Hooks: camelCase starting with 'use'
-               - Constants: UPPER_SNAKE_CASE
-               - Variables/functions: camelCase
-               - Types/Interfaces: PascalCase
+            const userPrompt = [
+              '## PR Diff',
+              '```diff',
+              diff.slice(0, 20000),
+              '```',
+              '',
+              '## Implementation Plan',
+              implPlan.slice(0, 4000),
+              '',
+              '## Development Guidelines',
+              devGuide.slice(0, 4000)
+            ].join('\n');
 
-            3. CODE STANDARDS:
-               - No Tailwind CSS utility classes (use CSS Modules only)
-               - Server Components by default, 'use client' only for interactivity/hooks/browser APIs
-               - No API secrets exposed on client side
-               - JSDoc comments on all utility functions, hooks, and context exports
-               - CSS custom properties from global.css :root must be used (no hardcoded hex colors)
-               - No inline styles unless absolutely necessary
-
-            4. DESIGN PLAN ALIGNMENT:
-               - Does the code implement what was planned in the implementation plan?
-               - Are all planned features present and correct?
-
-            5. BREAKAGE RISK:
-               - Does anything look like it could break the existing app?
-               - Are there any TypeScript type mismatches?
-               - Are there missing imports or incorrect export patterns?
-
-            6. OVERALL QUALITY:
-               - Are there any security issues (e.g. exposed secrets, unvalidated user input)?
-               - Are CSS module class names following the project convention?
-
-            Format your response as a structured markdown review with:
-            - An overall verdict: ✅ APPROVED / ⚠️ NEEDS CHANGES / ❌ REJECTED
-            - A numbered list of findings per category
-            - Actionable suggestions for any issues found
-            Be constructive and specific. Reference exact file names and line numbers where possible.`;
-
-            const userPrompt = `## PR Code Diff
-            \`\`\`diff
-            ${diff}
-            \`\`\`
-
-            ## Implementation Plan
-            ${implPlan}
-
-            ## Development Guidelines
-            ${devGuide}
-
-            Please review this PR.`;
+            const apiKey = process.env.OPENAI_API_KEY;
+            if (!apiKey) {
+              core.setOutput('review', 'OPENAI_API_KEY secret is not set. Skipping AI review.');
+              return;
+            }
 
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'Authorization': 'Bearer ' + apiKey
               },
               body: JSON.stringify({
                 model: 'gpt-4o',
@@ -178,26 +144,40 @@ jobs:
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userPrompt }
                 ],
-                max_tokens: 2000,
+                max_tokens: 800,
                 temperature: 0.2
               })
             });
 
             const data = await response.json();
-            const review = data.choices?.[0]?.message?.content || 'AI review could not be generated.';
+
+            if (data.error) {
+              core.setOutput('review', 'AI review failed: ' + data.error.message);
+              return;
+            }
+
+            const review = data.choices?.[0]?.message?.content || 'No review generated.';
             core.setOutput('review', review);
 
-      - name: Post AI review as PR comment
+      - name: Post AI review comment on PR
         uses: actions/github-script@v7
+        env:
+          AI_REVIEW: ${{ steps.ai_review.outputs.review }}
         with:
           script: |
-            const review = `${{ steps.ai_review.outputs.review }}`;
-            const prNumber = context.payload.pull_request.number;
-            const body = `## 🤖 AI Architecture & Design Review\n\n${review}\n\n---\n*This review was generated automatically by the AI Review Agent checking compliance with the [Development Guidelines](.github/docs/development_guidelines.md) and [Implementation Plan](.github/docs/implementation_plan.md).*`;
+            const review = process.env.AI_REVIEW || 'No review available.';
+            const body = [
+              '## AI Architecture Review',
+              '',
+              review,
+              '',
+              '---',
+              '_Automated review checking compliance with `.github/docs/implementation_plan.md` and `.github/docs/development_guidelines.md`._'
+            ].join('\n');
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: prNumber,
+              issue_number: context.payload.pull_request.number,
               body: body
             });
