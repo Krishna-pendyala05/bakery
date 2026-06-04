@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A Product represents one purchasable SKU: one flavour at one specific size.
+// 9 flavours x 2 sizes = 18 Product rows in the database.
+model Product {
+  id          String   @id @default(uuid())
+  name        String   // Full display name, e.g. "Chocolate Fudge Cake - 1 Kg"
+  flavour     String   // Flavour group name, e.g. "Chocolate Fudge"
+  size        String   // "HALF_KG" or "ONE_KG"
+  description String
+  price       Float    // Price in INR
+  imagePath   String   // Path relative to /public, e.g. "/images/cake-image1.png"
+  tags        String   @default("[]") // JSON array of tags, e.g. '["eggless"]'
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  customerName  String
+  customerEmail String
+  customerPhone String
+  deliveryDate  DateTime
+  notes         String?
+  totalAmount   Float    // Total in INR
+  status        String   @default("PENDING_PAYMENT")
+  // JSON array: Array<{ id: string, name: string, flavour: string, size: string, price: number, quantity: number }>
+  items         String
+  pgOrderId     String?  // Reference to Razorpay order ID
+  deliveryOtp   String?  // 6-digit OTP shown to customer for pickup/delivery verification
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("orders")
+}
