@@ -1,4 +1,4 @@
-# 🎂 The Sweet Spot — Artisanal Bakery Website
+# The Sweet Spot: Artisanal Bakery Website
 
 A modern, premium e-commerce website for a local Indian bakery selling artisanal cakes online. Built for performance, SEO, and a delightful user experience.
 
@@ -8,7 +8,7 @@ A modern, premium e-commerce website for a local Indian bakery selling artisanal
 
 | Layer | Technology |
 |---|---|
-| **Framework** | Next.js 16+ (App Router) — TypeScript |
+| **Framework** | Next.js 16+ (App Router) with TypeScript |
 | **Styling** | Vanilla CSS Modules (no Tailwind CSS) |
 | **Database** | Prisma ORM + SQLite (dev) / Cloudflare D1 (prod) |
 | **Auth** | Custom OTP-based (SMS/Email) for users; Email+Password for admins |
@@ -57,10 +57,10 @@ prisma/
 
 ## Development Rules (Must Follow)
 
-1. **No Tailwind CSS** — use CSS Modules only.
-2. **CSS variables** from `globals.css` `:root` — never hardcode colors.
-3. **Server Components by default** — add `'use client'` only for interactivity/browser APIs.
-4. **Never expose secrets** on the client — keep all API keys server-side only.
+1. **No Tailwind CSS**: use CSS Modules only.
+2. **CSS variables** from `globals.css` `:root`: never hardcode colors.
+3. **Server Components by default**: add `'use client'` only for interactivity and browser APIs.
+4. **Never expose secrets** on the client: keep all API keys server-side only.
 5. **Component folder pattern**: Each component lives in its own folder with `Component.tsx`, `Component.module.css`, and `index.ts`.
 6. **Naming**: `PascalCase` for components, `camelCase` for hooks/utils, `UPPER_SNAKE_CASE` for constants.
 7. **JSDoc** on all hooks, utilities, and context exports.

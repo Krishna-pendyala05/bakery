@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — block all except the safe template
+# env files: block all except the safe template
 .env*
 !.env.example
 
